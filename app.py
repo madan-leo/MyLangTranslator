@@ -1,15 +1,18 @@
 import streamlit as st
 import pageConfig as PC
 import translation_apis as my_api
-from azure.storage.blob import BlobServiceClient
-import tempfile
-import os
-import time
+import myAzureTable as LogTable
+import tempfile, os, time
 from pathlib import Path
-import myAzureTable as AzTable
 import pandas as pd
-from sqlalchemy import create_engine
 from azure.data.tables import TableClient
+from azure.storage.blob import BlobServiceClient
+
+languageShortcuts = {'Afrikaans': 'af','Albanian': 'sq','Amharic': 'am','Arabic': 'ar','Armenian': 'hy','Assamese': 'as','Azerbaijani (Latin)': 'az','Bangla': 'bn','Bashkir': 'ba','Basque': 'eu','Bosnian (Latin)': 'bs','Bulgarian': 'bg','Cantonese (Traditional)': 'yue','Catalan': 'ca','Chinese (Literary)': 'lzh','Chinese Simplified': 'zh-Hans','Chinese Traditional': 'zh-Hant','Croatian': 'hr','Czech': 'cs','Danish': 'da','Dari': 'prs','Divehi': 'dv','Dutch': 'nl','English': 'en','Estonian': 'et','Faroese': 'fo','Fijian': 'fj','Filipino': 'fil','Finnish': 'fi','French': 'fr','French (Canada)': 'fr-ca','Galician': 'gl','Georgian': 'ka','German': 'de','Greek': 'el','Gujarati': 'gu','Haitian Creole': 'ht','Hebrew': 'he','Hindi': 'hi','Hmong Daw (Latin)': 'mww','Hungarian': 'hu','Icelandic': 'is','Indonesian': 'id','Interlingua': 'ia','Inuinnaqtun': 'ikt','Inuktitut': 'iu','Inuktitut (Latin)': 'iu-Latn','Irish': 'ga','Italian': 'it','Japanese': 'ja','Kannada': 'kn','Kazakh (Cyrillic)': 'kk, kk-cyrl','Kazakh (Latin)': 'kk-latn','Khmer': 'km','Klingon': 'tlh-Latn','Klingon (plqaD)': 'tlh-Piqd','Korean': 'ko','Kurdish (Arabic) (Central)': 'ku-arab,ku','Kurdish (Latin) (Northern)': 'ku-latn, kmr','Kyrgyz (Cyrillic)': 'ky','Lao': 'lo','Latvian': 'lv','Lithuanian': 'lt','Macedonian': 'mk','Malagasy': 'mg','Malay (Latin)': 'ms','Malayalam': 'ml','Maltese': 'mt','Maori': 'mi','Marathi': 'mr','Mongolian (Cyrillic)': 'mn-Cyrl','Mongolian (Traditional)': 'mn-Mong','Myanmar (Burmese)': 'my','Nepali': 'ne','Norwegian': 'nb','Odia': 'or','Pashto': 'ps','Persian': 'fa','Polish': 'pl','Portuguese (Brazil)': 'pt, pt-br','Portuguese (Portugal)': 'pt-pt','Punjabi': 'pa','Queretaro Otomi': 'otq','Romanian': 'ro','Russian': 'ru','Samoan (Latin)': 'sm','Serbian (Cyrillic)': 'sr-Cyrl','Serbian (Latin)': 'sr, sr-latn','Slovak': 'sk','Slovenian': 'sl','Somali': 'so','Spanish': 'es','Swahili (Latin)': 'sw','Swedish': 'sv','Tahitian': 'ty','Tamil': 'ta','Tatar (Latin)': 'tt','Telugu': 'te','Thai': 'th','Tibetan': 'bo','Tigrinya': 'ti','Tongan': 'to','Turkish': 'tr','Turkmen (Latin)': 'tk','Ukrainian': 'uk','Upper Sorbian': 'hsb','Urdu': 'ur','Uyghur (Arabic)': 'ug','Uzbek (Latin)': 'uz','Vietnamese': 'vi','Welsh': 'cy','Yucatec Maya': 'yua','Zulu': 'zu'}
+def reverseLanguageLookup(lang):
+    for i in languageShortcuts:
+        if languageShortcuts[i] == lang:
+            return i
 
 # Set Page layouts and colors
 PC.pageconfig()
@@ -34,36 +37,36 @@ if "filename" not in st.session_state:
 if "translation_status" not in st.session_state:
     st.session_state.translation_status = ""
 
-tab1,tab2,tab3 = st.tabs(["**Translate Text**","**Translate Documents**","**History**"])
+tab1,tab2,tab3 = st.tabs(["**Translate Text**","**Translate Documents**","**Translation History**"])
 
 # Tab 1 for text translations
 with tab1:
     col1, col2, col3 = st.columns([0.45,0.1,0.45])
     with col2:
-        st.markdown(2*"<br />", unsafe_allow_html=True)
-        btntranslate = st.button("Translate")
-    # Call text translation api, and display output
+       st.markdown(2 * "<br/>", unsafe_allow_html=True)
+       btntranslate = st.button("Translate")
+    # If Translate Text button is clicked, call text translation api and display output
     if btntranslate:
         if st.session_state.tolanguage and st.session_state.totranslate:
-            output = my_api.texttranslator_api(st.session_state.totranslate, st.session_state.tolanguage)
+            output = my_api.texttranslator_api(st.session_state.totranslate, languageShortcuts.get(st.session_state.tolanguage))
             st.session_state.displayoutput = output[0]["translations"][0]["text"]
-            st.session_state.detlang = output[0]["detectedLanguage"]["language"]
+            st.session_state.detlang = reverseLanguageLookup(output[0]["detectedLanguage"]["language"])
 
             # Create row in Azure table as audit trial
-            AzTable.connect_azure_table()
-            AzTable.create_entity("Text","madan.jalari",st.session_state.detlang,st.session_state.tolanguage,st.session_state.totranslate,st.session_state.displayoutput,"","")
+            LogTable.connect_azure_table()
+            LogTable.create_entity("Text","madan.jalari",st.session_state.detlang,st.session_state.tolanguage,st.session_state.totranslate,st.session_state.displayoutput,"","")
         elif not st.session_state.totranslate:
             st.error("Please enter text to translate")
         else:
-            st.error("Please pick a To language")
+            st.error("Please pick a translation language")
     # Display each column: This code runs every time an action happens on UI, so store the variable in session state
     with col1:
-        st.session_state.totranslate = st.text_area("***Text to Translate***", placeholder="Enter Text Here...")
+        st.session_state.totranslate = st.text_area("**Text to Translate**", placeholder="Enter Text Here...")
         st.write("Detected Language: ")
         st.write(st.session_state.detlang)
     with col3:
         translated = st.text_area("***Translated Text***", st.session_state.displayoutput, disabled=True)
-        st.session_state.tolanguage = st.selectbox('To Language', ('', 'ar','en', 'es', 'fr', 'hi', 'it','ja','ko','pt','sv','ta','te','yue'))
+        st.session_state.tolanguage = st.selectbox('To Language', ('', 'Arabic', 'English', 'Spanish', 'German', 'Italian', 'Spanish', 'Swedish'))
 
 # Tab 2 for Document translations
 with tab2:
@@ -73,7 +76,7 @@ with tab2:
     with dcol2:
         st.markdown("<br />", unsafe_allow_html=True)
         doc_btntranslate = st.button("Translate Document", use_container_width=True)
-        st.session_state.dtolanguage = st.selectbox('To Language:', ('', 'ar', 'en', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'pt', 'sv', 'ta', 'te', 'yue'))
+        st.session_state.dtolanguage = st.selectbox('To Language:', ('', 'Arabic', 'English', 'Spanish', 'German', 'Italian', 'Spanish', 'Swedish'))
 
     # When Translate button is clicked
     if doc_btntranslate:
@@ -95,15 +98,16 @@ with tab2:
                     container_client.upload_blob(name=st.session_state.filename, data=f)
 
                 # Call document translation API, and write output to Translated container
-                resp = my_api.doctranslation_api(st.session_state.filename,st.session_state.dtolanguage)
+                resp = my_api.doctranslation_api(st.session_state.filename,languageShortcuts.get(st.session_state.dtolanguage))
 
                 # Write a Audit log into Azure tables
-                AzTable.connect_azure_table()
-                AzTable.create_entity("Document","madan.jalari","Auto",st.session_state.dtolanguage,"","",st.session_state.filename,st.session_state.filename)
+                LogTable.connect_azure_table()
+                LogTable.create_entity("Document","madan.jalari","Auto",st.session_state.dtolanguage,"","",st.session_state.filename,st.session_state.filename)
             with dcol3:
                 with st.spinner('Translation in Progress'):
                     time.sleep(20)
             st.session_state.translation_status = "Translated"
+
         elif not files:
             st.error("Please pick a file to translate")
         else:
@@ -148,7 +152,7 @@ with tab2:
 with tab3:
     my_filter = "User eq 'madan.jalari'"
     table_client = TableClient.from_connection_string(conn_str="DefaultEndpointsProtocol=https;AccountName=mjstorageaccount1980;AccountKey=bF+CK6B6ZyeIWUJkEEHxP4FxARHQqYDYxlDn9ukVnADisezX1vtIu/u4ZbqO5iugPkUG2N7zwB6C+ASti7ycVw==;EndpointSuffix=core.windows.net",table_name="translationaudit")
-    entities = table_client.query_entities(my_filter)
+    entities = table_client.query_entities(query_filter= my_filter)
     if entities:
         df = pd.DataFrame(entities).sort_values(by=["RowKey"],ascending=False)
         st.write(df)

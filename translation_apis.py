@@ -1,9 +1,8 @@
-import requests, uuid, json
-import streamlit as st
+import requests, uuid
 import os
 
 # Call Text translation api by passing Key and end point
-def texttranslator_api (input_text, language):
+def texttranslator_api (input_text, Tolanguage):
     # Add your key and endpoint
     key = "85c9f8217fbc4f60ae40e47c021d6a34"
     endpoint = "https://api.cognitive.microsofttranslator.com"
@@ -13,7 +12,7 @@ def texttranslator_api (input_text, language):
     params = {
         'api-version': '3.0',
         'from': '',
-        'to': [language]
+        'to': Tolanguage
     }
     headers = {
         'Ocp-Apim-Subscription-Key': key,
