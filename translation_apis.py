@@ -4,8 +4,8 @@ import os
 # Call Text translation api by passing Key and end point
 def texttranslator_api (input_text, Tolanguage):
     # Add your key and endpoint
-    key = "85c9f8217fbc4f60ae40e47c021d6a34"
-    endpoint = "https://api.cognitive.microsofttranslator.com"
+    key = os.environ["AZURE_TEXT_TRANSLATION_API_KEY"]
+    endpoint = os.environ["AZURE_TEXT_TRANSLATION_ENDPOINT"]
     location = "eastus"
     path = '/translate'
     constructed_url = endpoint + path
@@ -31,11 +31,11 @@ def texttranslator_api (input_text, Tolanguage):
 # call Document translation api by passing end point and key. It's a asynchronous batch operation
 def doctranslation_api(filename, tolang):
     import requests, json
-    endpoint = "https://mjbingtranslator.cognitiveservices.azure.com/translator/text/batch/v1.1"
-    key = "92a99bc2cce845898e6574f3497a59cb"
+    endpoint = os.environ["AZURE_DOC_TRANSLATION_ENDPOINT"]
+    key = os.environ["AZURE_DOC_TRANSLATION_API_KEY"]
     path = "/batches"
     constructed_url = endpoint + path
-    source_container = "https://mjstorageaccount1980.blob.core.windows.net/original-files/"
+    source_container = os.environ["AZURE_ORIGINAL_FILES_CONTAINER_URL"]
     payload = {
         "inputs": [
             {
@@ -47,7 +47,7 @@ def doctranslation_api(filename, tolang):
                 "targets": [
                     {
                         # Specify target container and file name where the translated blob is stored
-                        "targetUrl": "https://mjstorageaccount1980.blob.core.windows.net/translated-files?sp=racwl&st=2024-02-14T21:06:41Z&se=2025-02-15T05:06:41Z&sv=2022-11-02&sr=c&sig=Awnui3pBx8YZG8KwsEHC%2B4ewg%2BhEXgVqgjIg5Th0y%2FM%3D",
+                        "targetUrl": os.environ["AZURE_TRANSLATED_FILES_CONTAINER_URL"],
                         "storageSource": "AzureBlob",
                         "language": tolang
                     }

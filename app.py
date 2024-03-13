@@ -1,7 +1,7 @@
 import streamlit as st
 import pageConfig as PC
 import translation_apis as my_api
-import myAzureTable as LogTable
+import LogTable as LogTable
 import tempfile, os, time
 from pathlib import Path
 import pandas as pd
@@ -90,8 +90,8 @@ with tab2:
                     f.write(file.getvalue())
 
                 # Upload blob to the Azure container, into Original files folder
-                account_url="https://mjstorageaccount1980.blob.core.windows.net/?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2025-02-16T05:28:50Z&st=2024-02-15T21:28:50Z&spr=https,http&sig=zRsJZQKojcLl1TkxGTevgF%2FL4YqC2eSgHyDJx%2BX%2Fkus%3D"
-                container_name = "original-files"
+                account_url=os.environ["AZURE_ORIGINAL_FILES_CONTAINER_SAS_URI"]
+                container_name = os.environ["AZURE_ORIGINAL_FILES_CONTAINER_NAME"]
                 blob_service_client = BlobServiceClient(account_url=account_url)
                 container_client=blob_service_client.get_container_client(container= container_name)
                 with open(path,mode="rb") as f:
@@ -118,8 +118,8 @@ with tab2:
         for file in files:
             # Connect to translated-files container via SAS url
             st.session_state.filename = file.name.split('.')[0] + "_" + file.file_id + "." + file.name.split('.')[1]
-            daccount_url = "https://mjstorageaccount1980.blob.core.windows.net/?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2025-02-16T05:28:50Z&st=2024-02-15T21:28:50Z&spr=https,http&sig=zRsJZQKojcLl1TkxGTevgF%2FL4YqC2eSgHyDJx%2BX%2Fkus%3D"
-            translated_container_name = "translated-files"
+            daccount_url = os.environ["AZURE_TRANSLATED_FILES_CONTAINER_SAS_URI"]
+            translated_container_name = os.environ["AZURE_TRANSLATED_FILES_CONTAINER_NAME"]
             blob_client = BlobServiceClient(account_url=daccount_url)
             dcontainer_client = blob_client.get_blob_client(container=translated_container_name, blob=st.session_state.filename)
             # Get local downloads folder
@@ -148,11 +148,12 @@ with tab2:
             st.markdown("<h5 style='text-align: center; color: Red;'><b>Download Complete</b></h5>",unsafe_allow_html=True)
             st.markdown("<h6 style='text-align: center; color: black;'>Please check your downloads folder</h6>", unsafe_allow_html=True)
 
-# Tab 3 to display all history of translations for the user
+ #Tab 3 to display all history of translations for the user
 with tab3:
     my_filter = "User eq 'madan.jalari'"
-    table_client = TableClient.from_connection_string(conn_str="DefaultEndpointsProtocol=https;AccountName=mjstorageaccount1980;AccountKey=bF+CK6B6ZyeIWUJkEEHxP4FxARHQqYDYxlDn9ukVnADisezX1vtIu/u4ZbqO5iugPkUG2N7zwB6C+ASti7ycVw==;EndpointSuffix=core.windows.net",table_name="translationaudit")
-    entities = table_client.query_entities(query_filter= my_filter)
+    hh = os.getenv('AZURE_LOG_TABLE_CONN_STRING')
+    table_client = TableClient.from_connection_string(conn_str=hh,table_name=os.getenv('AZURE_LOG_TABLE_NAME'))
+    entities = table_client.query_entities(query_filter=my_filter)
     if entities:
         df = pd.DataFrame(entities).sort_values(by=["RowKey"],ascending=False)
         st.write(df)

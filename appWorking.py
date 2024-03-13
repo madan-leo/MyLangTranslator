@@ -6,7 +6,7 @@ import tempfile
 import os
 import time
 from pathlib import Path
-import myAzureTable as AzTable
+import LogTable as AzTable
 import pandas as pd
 from sqlalchemy import create_engine
 from azure.data.tables import TableClient
