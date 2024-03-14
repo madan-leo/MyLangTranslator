@@ -40,14 +40,14 @@ def doctranslation_api(filename, tolang):
         "inputs": [
             {
                 "source": {
-                   # Specifu source container and file name where the blob is picked from for translation
+                   # Specify source container and file name where the blob is picked from for translation
                     "sourceUrl": source_container + filename,
                     "storageSource": "AzureBlob"
                 },
                 "targets": [
                     {
                         # Specify target container and file name where the translated blob is stored
-                        "targetUrl": os.environ["AZURE_TRANSLATED_FILES_CONTAINER_URL"],
+                        "targetUrl": os.environ["AZURE_TRANSLATED_FILES_CONTAINER_SAS_URI"],
                         "storageSource": "AzureBlob",
                         "language": tolang
                     }

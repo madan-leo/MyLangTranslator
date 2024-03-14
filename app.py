@@ -90,7 +90,7 @@ with tab2:
                     f.write(file.getvalue())
 
                 # Upload blob to the Azure container, into Original files folder
-                account_url=os.environ["AZURE_ORIGINAL_FILES_CONTAINER_SAS_URI"]
+                account_url=os.environ["AZURE_BLOB_STORAGE_ACCOUNT_SAS_URI"]
                 container_name = os.environ["AZURE_ORIGINAL_FILES_CONTAINER_NAME"]
                 blob_service_client = BlobServiceClient(account_url=account_url)
                 container_client=blob_service_client.get_container_client(container= container_name)
@@ -118,7 +118,7 @@ with tab2:
         for file in files:
             # Connect to translated-files container via SAS url
             st.session_state.filename = file.name.split('.')[0] + "_" + file.file_id + "." + file.name.split('.')[1]
-            daccount_url = os.environ["AZURE_TRANSLATED_FILES_CONTAINER_SAS_URI"]
+            daccount_url = os.environ["AZURE_BLOB_STORAGE_ACCOUNT_SAS_URI"]
             translated_container_name = os.environ["AZURE_TRANSLATED_FILES_CONTAINER_NAME"]
             blob_client = BlobServiceClient(account_url=daccount_url)
             dcontainer_client = blob_client.get_blob_client(container=translated_container_name, blob=st.session_state.filename)
