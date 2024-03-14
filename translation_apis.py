@@ -4,8 +4,8 @@ import os
 # Call Text translation api by passing Key and end point
 def texttranslator_api (input_text, Tolanguage):
     # Add your key and endpoint
-    key = os.environ["AZURE_TEXT_TRANSLATION_API_KEY"]
-    endpoint = os.environ["AZURE_TEXT_TRANSLATION_ENDPOINT"]
+    key = os.getenv('AZURE_TEXT_TRANSLATION_API_KEY')
+    endpoint = os.getenv('AZURE_TEXT_TRANSLATION_ENDPOINT')
     location = "eastus"
     path = '/translate'
     constructed_url = endpoint + path
@@ -31,11 +31,11 @@ def texttranslator_api (input_text, Tolanguage):
 # call Document translation api by passing end point and key. It's a asynchronous batch operation
 def doctranslation_api(filename, tolang):
     import requests, json
-    endpoint = os.environ["AZURE_DOC_TRANSLATION_ENDPOINT"]
-    key = os.environ["AZURE_DOC_TRANSLATION_API_KEY"]
+    endpoint = os.getenv('AZURE_DOC_TRANSLATION_ENDPOINT')
+    key = os.getenv('AZURE_DOC_TRANSLATION_API_KEY')
     path = "/batches"
     constructed_url = endpoint + path
-    source_container = os.environ["AZURE_ORIGINAL_FILES_CONTAINER_URL"]
+    source_container = os.getenv('AZURE_ORIGINAL_FILES_CONTAINER_URL')
     payload = {
         "inputs": [
             {
@@ -47,7 +47,7 @@ def doctranslation_api(filename, tolang):
                 "targets": [
                     {
                         # Specify target container and file name where the translated blob is stored
-                        "targetUrl": os.environ["AZURE_TRANSLATED_FILES_CONTAINER_SAS_URI"],
+                        "targetUrl": os.getenv('AZURE_TRANSLATED_FILES_CONTAINER_SAS_URI'),
                         "storageSource": "AzureBlob",
                         "language": tolang
                     }

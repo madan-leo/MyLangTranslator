@@ -7,7 +7,9 @@ from pathlib import Path
 import pandas as pd
 from azure.data.tables import TableClient
 from azure.storage.blob import BlobServiceClient
+from dotenv import load_dotenv
 
+load_dotenv()
 languageShortcuts = {'Afrikaans': 'af','Albanian': 'sq','Amharic': 'am','Arabic': 'ar','Armenian': 'hy','Assamese': 'as','Azerbaijani (Latin)': 'az','Bangla': 'bn','Bashkir': 'ba','Basque': 'eu','Bosnian (Latin)': 'bs','Bulgarian': 'bg','Cantonese (Traditional)': 'yue','Catalan': 'ca','Chinese (Literary)': 'lzh','Chinese Simplified': 'zh-Hans','Chinese Traditional': 'zh-Hant','Croatian': 'hr','Czech': 'cs','Danish': 'da','Dari': 'prs','Divehi': 'dv','Dutch': 'nl','English': 'en','Estonian': 'et','Faroese': 'fo','Fijian': 'fj','Filipino': 'fil','Finnish': 'fi','French': 'fr','French (Canada)': 'fr-ca','Galician': 'gl','Georgian': 'ka','German': 'de','Greek': 'el','Gujarati': 'gu','Haitian Creole': 'ht','Hebrew': 'he','Hindi': 'hi','Hmong Daw (Latin)': 'mww','Hungarian': 'hu','Icelandic': 'is','Indonesian': 'id','Interlingua': 'ia','Inuinnaqtun': 'ikt','Inuktitut': 'iu','Inuktitut (Latin)': 'iu-Latn','Irish': 'ga','Italian': 'it','Japanese': 'ja','Kannada': 'kn','Kazakh (Cyrillic)': 'kk, kk-cyrl','Kazakh (Latin)': 'kk-latn','Khmer': 'km','Klingon': 'tlh-Latn','Klingon (plqaD)': 'tlh-Piqd','Korean': 'ko','Kurdish (Arabic) (Central)': 'ku-arab,ku','Kurdish (Latin) (Northern)': 'ku-latn, kmr','Kyrgyz (Cyrillic)': 'ky','Lao': 'lo','Latvian': 'lv','Lithuanian': 'lt','Macedonian': 'mk','Malagasy': 'mg','Malay (Latin)': 'ms','Malayalam': 'ml','Maltese': 'mt','Maori': 'mi','Marathi': 'mr','Mongolian (Cyrillic)': 'mn-Cyrl','Mongolian (Traditional)': 'mn-Mong','Myanmar (Burmese)': 'my','Nepali': 'ne','Norwegian': 'nb','Odia': 'or','Pashto': 'ps','Persian': 'fa','Polish': 'pl','Portuguese (Brazil)': 'pt, pt-br','Portuguese (Portugal)': 'pt-pt','Punjabi': 'pa','Queretaro Otomi': 'otq','Romanian': 'ro','Russian': 'ru','Samoan (Latin)': 'sm','Serbian (Cyrillic)': 'sr-Cyrl','Serbian (Latin)': 'sr, sr-latn','Slovak': 'sk','Slovenian': 'sl','Somali': 'so','Spanish': 'es','Swahili (Latin)': 'sw','Swedish': 'sv','Tahitian': 'ty','Tamil': 'ta','Tatar (Latin)': 'tt','Telugu': 'te','Thai': 'th','Tibetan': 'bo','Tigrinya': 'ti','Tongan': 'to','Turkish': 'tr','Turkmen (Latin)': 'tk','Ukrainian': 'uk','Upper Sorbian': 'hsb','Urdu': 'ur','Uyghur (Arabic)': 'ug','Uzbek (Latin)': 'uz','Vietnamese': 'vi','Welsh': 'cy','Yucatec Maya': 'yua','Zulu': 'zu'}
 def reverseLanguageLookup(lang):
     for i in languageShortcuts:
@@ -66,7 +68,7 @@ with tab1:
         st.write(st.session_state.detlang)
     with col3:
         translated = st.text_area("***Translated Text***", st.session_state.displayoutput, disabled=True)
-        st.session_state.tolanguage = st.selectbox('To Language', ('', 'Arabic', 'English', 'Spanish', 'German', 'Italian', 'Spanish', 'Swedish'))
+        st.session_state.tolanguage = st.selectbox('To Language', ('', 'Arabic', 'English', 'French', 'German', 'Italian', 'Spanish', 'Swedish'))
 
 # Tab 2 for Document translations
 with tab2:
@@ -76,7 +78,7 @@ with tab2:
     with dcol2:
         st.markdown("<br />", unsafe_allow_html=True)
         doc_btntranslate = st.button("Translate Document", use_container_width=True)
-        st.session_state.dtolanguage = st.selectbox('To Language:', ('', 'Arabic', 'English', 'Spanish', 'German', 'Italian', 'Spanish', 'Swedish'))
+        st.session_state.dtolanguage = st.selectbox('To Language:', ('', 'Arabic', 'English', 'French', 'German', 'Italian', 'Spanish', 'Swedish'))
 
     # When Translate button is clicked
     if doc_btntranslate:
@@ -90,8 +92,8 @@ with tab2:
                     f.write(file.getvalue())
 
                 # Upload blob to the Azure container, into Original files folder
-                account_url=os.environ["AZURE_BLOB_STORAGE_ACCOUNT_SAS_URI"]
-                container_name = os.environ["AZURE_ORIGINAL_FILES_CONTAINER_NAME"]
+                account_url=os.getenv('AZURE_BLOB_STORAGE_ACCOUNT_SAS_URI')
+                container_name = os.getenv('AZURE_ORIGINAL_FILES_CONTAINER_NAME')
                 blob_service_client = BlobServiceClient(account_url=account_url)
                 container_client=blob_service_client.get_container_client(container= container_name)
                 with open(path,mode="rb") as f:
@@ -118,8 +120,8 @@ with tab2:
         for file in files:
             # Connect to translated-files container via SAS url
             st.session_state.filename = file.name.split('.')[0] + "_" + file.file_id + "." + file.name.split('.')[1]
-            daccount_url = os.environ["AZURE_BLOB_STORAGE_ACCOUNT_SAS_URI"]
-            translated_container_name = os.environ["AZURE_TRANSLATED_FILES_CONTAINER_NAME"]
+            daccount_url = os.getenv('AZURE_BLOB_STORAGE_ACCOUNT_SAS_URI')
+            translated_container_name = os.getenv('AZURE_TRANSLATED_FILES_CONTAINER_NAME')
             blob_client = BlobServiceClient(account_url=daccount_url)
             dcontainer_client = blob_client.get_blob_client(container=translated_container_name, blob=st.session_state.filename)
             # Get local downloads folder
