@@ -1,0 +1,235 @@
+#Prerequisites
+
+#Install before run
+
+#Requires -RunAsAdministrator
+
+#If you have issues running the scrip due digital sign please bypass the policy by doing: Set-ExecutionPolicy -Scope Process ExecutionPolicy ByPass
+
+#Output capture
+
+$date = Get-Date-Format yyyyMMdd
+
+$log". \logs\Log_$date.log"
+
+$ErrorActionPreference "Stop"
+
+$VerbosePreference = "SilentlyContinue"
+
+Start-Transcript -path $log -append
+
+#param(
+
+outputPath = ("D:\testing WorkspacesScan Output" -f [datetime]: : Today)
+
+$ $configFilePath".\Config.json"
+
+$reset $false
+
+# )
+
+try {
+
+$stopwatch - [System.Diagnostics.Stopwatch]::new()
+
+$stopwatch.Start()
+
+Login-PowerBIServiceAccount -Credential (New-Object System.Management.Automation.PSCredential 'srvPBITenantAdmin@fmr.com', (Get-Content "srvPBITenantAdmin_pwd" | ConvertTo-SecureString -Key (1..16)))
+
+$authHeader{'Content-Type' 'application/json'
+
+"Authorization (Get-PowerBIAccessToken). Authorization}
+
+#Change for you prefer folder path.
+
+$currentPath = "D:\testing WorkspacesScan"
+
+Set-Location $currentPath
+
+New-Item Item Type Directory -Path $outputPath -ErrorAction SilentlyContinue | Out-Null
+
+#ensure folder
+
+if (Test-Path $configFilePath) { $config Get-Content $configFilePath | ConvertFrom-Json }
+
+else {
+
+}
+
+throw "Cannot find config file '$configFilePath"
+
+#region Workspace Scans: 1 Get Modified; 2 Start Scan for modified; 3 Wait for scan finish; 4 - Get Results
+
+Write-Host "Getting workspaces to scan"
+
+$modified RequestUrl 'workspaces/modified' if ($config.Catalog. LastRun and !$reset) {
+
+}
+
+$modifiedRequestUrl = $modified RequestUrl + "?modifiedSince=$($config.Catalog.LastRun)"
+
+alca
+
+Ln 54. Col 104 7.618 characters
+
+I
+
+} $
+
+modified RequestUrl + "?modifiedSince=$($config.Catalog.LastRun)"
+
+else {
+
+$config | Add-Member -NotePropertyName "Catalog" -NotePropertyValue @{"LastRun" = $null } -Force }
+
+Write-Host "Reset: $reset"
+
+Write-Host "Since: $($config.Catalog.LastRun)"
+
+# Get Modified Workspaces since last scan
+
+$workspacesModified Invoke-RestMethod -Uri "https://api.powerbi.com/v1.0/myorg/admin/$modifiedRequestUrl" Headers $authHeader -Method GET $workspacesModified = @($workspacesModified | ? {$_.id -eq aee79bdd-af77-4b01-b110-b06b8fddc8a1'})
+
+#OR $.id -eq b6304a2b-7bd5-425e-8417-c0537a442057'})
+
+if (!$workspacesModified) {
+
+Write-Host "No workspaces modified"
+
+}
+
+Write-Host "Modified workspaces: $($workspacesModified.Count)"
+
+$config.Catalog. LastRun [datetime]::UtcNow.Date.ToString("o")
+
+Write-Host "Last Run: "$config.Catalog.LastRun
+
+$skip = 0
+
+$batchCount 100
+
+$workspaces ScanRequests = @()
+
+do {
+
+# Call GetInfo to request workspace scan in batches of 100 (throtling after 500 calls per hour) https://docs.microsoft.com/en-us/rest/api/power-bi/admin/workspaceinfo_postworkspaceinfo
+
+try {
+
+$workspacesBatch @($workspacesModified | Select -First $batchCount Skip $skip)
+
+if ($workspacesBatch) {
+
+Write-Host "Requesting workspace scan: $($skip + $batchCount) / $($workspacesModified.Count)" $bodyStr = ConvertTo-Json @{"workspaces" @($workspacesBatch.Id) }
+
+$getInfoDetails = "lineage=true&datasourceDetails=true&datasetSchema=true&datasetExpressions=true&getArtifactUsers=true"
+
+$workspacesScanRequests + Invoke-RestMethod -Uri "https://api.powerbi.com/v1.0/myorg/admin/workspaces/getInfo?$getInfoDetails" -Method POST -Headers $authHeader -body $bodyStr $skip + $batchCount
+
+}
+
+}
+
+catch [System.Net.WebException] { $ex $_.Exception
+
+$statusCode $ex.Response. StatusCode if ($statusCode -eq 429) {
+
+$waitSeconds [int]:: Parse($ex.Response.Headers ["Retry-After"]) Write-Host "429 Throthling Error Need to wait $waitSeconds seconds...
+
+Start-Sleep -Seconds ($waitSeconds + 5)
+
+authHeader = @{'Content-Type' 'application/json' $ 'Authorization' (Get-PowerBIAccessToken). Authorization}
+
+}
+
+}
+
+}
+
+while($workspacesBatch.Count -ne 0 and $workspacesBatch.Count -ge $batchCount)
+
+#Wait for Scan to execute https://docs.microsoft.com/en-us/rest/api/power-bi/admin/workspaceinfo_getscanstatus
+
+while(@($workspacesScanRequests ? status in @("Running", "NotStarted"))) {
+
+Write-Host "Waiting for scan results..."
+
+Start-Sleep -Seconds 5
+
+foreach ($workspaceScanRequest in $workspacesScanRequests) {
+
+$scanStatus = Invoke-RestMethod -Uri "https://api.powerbi.com/v1.0/myorg/admin/workspaces/scanStatus/$($workspaceScanRequest.id)" -Method GET -Headers $authHeader
+
+Write-Host "Scan '$($scanStatus.id)': '$($scanStatus.status)'" $workspaceScanRequest.status = $scanStatus.status
+
+}
+
+}
+
+# Get Scan results (500 requests per hour) https://docs.microsoft.com/en-us/rest/api/power-bi/admin/workspaceinfo_getscanresult
+
+$scansOutputPath = $outputPath
+
+New-Item $scansOutputPath -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null
+
+FileCount = 1 $
+
+$auth Token (Get-PowerBIAccessToken). Authorization
+
+foreach ($Request in $workspacesScanRequests) {
+
+try {
+
+$auth Token $authToken.substring(7)
+
+$scanResult Invoke-PBIRequest authToken $authToken -resource "workspaces/scanResult/$($Request.id)" -admin method Get
+
+Write-Host "Scan Result $($scanStatus.id)': '$($scanResult.workspaces.Count)'"
+
+$wsCount 0
+
+ForEach($ws in $scanResult.workspaces) {
+
+$ws_outputFilePath = $scansOutputPath+"\Workspaces\"+$date+"_"+$FileCount+".json" ConvertTo-Json $scanResult.workspaces[$wsCount] -Depth 100 Compress | Out-File $ws_outputFilePath -Append -Encoding ASCII -Force
+
+$ds_outputFilePath = $scansOutputPath+"\datasource Instances\"+$date+"_"+$FileCount+".json" ConvertTo-Json $scanResult.datasourceInstances -Depth 100 Compress | Out-File $ds_outputFilePath -Append -Encoding ASCII -Force
+
+$mis_ds_outputFilePath = $scansOutputPath+"\misconfigured DatasourceInstances\"+$date+"_"+$FileCount+".json" ConvertTo-Json $scanResult.misconfigured Datasource Instances Depth 100 -Compress | Out-File $mis_ds_outputFilePath -Append -Encoding ASCII -Force
+
+$wsCount ++
+
++ $FileCount+
+
+}
+
+}
+
+catch [System.Net.WebException] {
+
+$ex = $_.Exception
+
+$statusCode $ex. Response. StatusCode if ($statusCode -eq 429) {
+
+$waitSeconds [int]:: Parse($ex. Response.Headers["Retry-After"]) waitSeconds seconds..."
+
+Write-Host "429 Throthling Error Need to wait $
+
+Start-Sleep -Seconds ($waitSeconds + 5) '
+
+$authHeader = @{'Content-Type' 'application/json
+
+"Authorization' (Get-PowerBIAccessToken). Authorization}
+
+Convertio-Json Sconfig | Out-File SconfigFilePath-force
+
+} Finally {
+
+Sstopwatch.Stop()
+
+Write-Host "Time Elapsed: $($stopwatch, Elapsed. TotalSeconds)s"
+
+#Delete log files older than the limit.
+
+Get-ChildItem -Path"\logs\" Filter "Log Recurse Force | Where-Object { 15 PSIsContainer and $ CreationTime It (Get Date). AddDays(-30)) | Remove-Item -Force
+
+Stop Transcript Exit
